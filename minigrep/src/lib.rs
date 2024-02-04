@@ -30,15 +30,26 @@ mod tests {
     #[test]
     fn one_result() {
         let query = "duct";
+        //这样书写,保证每行开头没有空格或其他看不见的符号
+        //或者手动加入换行符:Rust:\nsafe, fast, productive.\nPick three.";
         let contents = "\
-            Rust:
-            safe, fast, productive.
-            Pick three.";
+Rust:
+safe, fast, productive.
+Pick three.";
 
-        assert_eq!(vec!["safe, fast, productive"], search(query, contents));
+        assert_eq!(vec!["safe, fast, productive."], search(query, contents));
     }
 }
 
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    vec![]
+    let mut results = Vec::new();
+    for line in contents.lines() {
+        //遍历contents的每一行
+        if line.contains(query) {
+            //用查询字符串搜索该行
+            results.push(line); //存储匹配的行
+        }
+    }
+
+    results
 }
