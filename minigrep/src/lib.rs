@@ -19,7 +19,13 @@ impl Config {
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.file_path)?;
-    println!("get contents:\n{contents}");
+    //println!("target str:{}", config.query);
+    //println!("get contents:\n{contents}");
+    println!("===========================");
+    for line in search(&config.query, &contents) {
+        println!("{line}");
+    }
+
     Ok(())
 }
 
