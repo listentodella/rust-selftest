@@ -1,4 +1,5 @@
 use std::{
+    fs,                            //用于文件读写
     io::{prelude::*, BufReader},   //获取读写TcpStream流的特定trait
     net::{TcpListener, TcpStream}, //用于监听tcp连接
 };
@@ -29,6 +30,10 @@ fn handle_connection(mut stream: TcpStream) {
         .collect();
     //println!("request:{:#?}", http_request);
 
-    let response = "HTTP/1.1 200 OK\r\n\r\n";
+    let status_line = "HTTP/1.1 200 OK\r\n\r\n";
+    let contents = fs::read_to_string("hello.html").unwrap();
+    let length = contents.len();
+
+    let response = format!("{status_line}\r\nContents-Length: {length}\r\n\r\n{contents}");
     stream.write_all(response.as_bytes()).unwrap();
 }
