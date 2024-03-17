@@ -15,13 +15,15 @@ fn main() {
     let pool = ThreadPool::new(4);
 
     //incoming返回一个迭代器,它提供了一系列的TcpStream类型的流
-    for stream in listener.incoming() {
+    for stream in listener.incoming().take(2) {//这里只接收2个请求用于测试停机处理
         let stream = stream.unwrap();
 
         pool.execute(|| {
             handle_connection(stream);
         });
     }
+
+    println!("Shutting down.");
 }
 /*
 fn handle_connection(mut stream: TcpStream) {
@@ -57,7 +59,8 @@ fn handle_connection(mut stream: TcpStream) {
 
     let (status_line, filename) = match &request_line[..] {
         "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "hello.html"),
-        "GET /sleep HTTP/1.1" => {//访问 127.0.0.1:7878/sleep 即可触发
+        "GET /sleep HTTP/1.1" => {
+            //访问 127.0.0.1:7878/sleep 即可触发
             thread::sleep(Duration::from_secs(5));
             ("HTTP/1.1 200 OK", "hello.html")
         }
