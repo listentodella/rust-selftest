@@ -7,7 +7,7 @@ pub struct ThreadPool {
 }
 
 // 来存放用于向信道中发送的闭包
-struct Job;
+type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
     /// 创建线程池
@@ -36,7 +36,10 @@ impl ThreadPool {
     pub fn execute<F>(&self, f: F)
         where
             F: FnOnce() + Send + 'static,
-    {}
+    {
+        let job = Box::new(f);
+        self.sender.send(job).unwrap();
+    }
 }
 
 struct Worker {
@@ -46,11 +49,18 @@ struct Worker {
 
 impl Worker {
     fn new(id: usize, receiver: Arc::<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+        let thread = thread::spawn(move || {
+            let job = receiver.lock().unwrap().recv().unwrap();
+            // while let, if let, match 是代码块,在代码块结束前都不会丢弃临时值
+            // 这就意味着这种方式,job()在调用期间将一直持锁,其他worker无法接受任务处理
+            // while let Ok(job) = receiver.lock().unwrap().recv() {
+            //     println!("Worker {id} got a job; executing.");
+            //     job();
+            // }
+        });
         Worker {
             id,
-            thread: thread::spawn(|| {
-                receiver;
-            }),
+            thread,
         }
     }
 }
