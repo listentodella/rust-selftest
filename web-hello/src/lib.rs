@@ -42,15 +42,29 @@ impl ThreadPool {
     }
 }
 
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        for worker in &mut self.workers {
+            println!("Shutting down the worker {}", worker.id);
+            // 如果worker的线程是None,则此时这个worker已经清理了其线程,不需再做任何操作
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
+    }
+}
+
+
 struct Worker {
     id: usize,
-    thread: thread::JoinHandle<()>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
     fn new(id: usize, receiver: Arc::<Mutex<mpsc::Receiver<Job>>>) -> Worker {
         let thread = thread::spawn(move || {
             let job = receiver.lock().unwrap().recv().unwrap();
+            job();
             // while let, if let, match 是代码块,在代码块结束前都不会丢弃临时值
             // 这就意味着这种方式,job()在调用期间将一直持锁,其他worker无法接受任务处理
             // while let Ok(job) = receiver.lock().unwrap().recv() {
@@ -60,7 +74,7 @@ impl Worker {
         });
         Worker {
             id,
-            thread,
+            thread: Some(thread),
         }
     }
 }
