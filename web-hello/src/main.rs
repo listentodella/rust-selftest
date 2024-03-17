@@ -1,7 +1,9 @@
 use std::{
     fs,                            //用于文件读写
-    io::{prelude::*, BufReader},   //获取读写TcpStream流的特定trait
+    io::{BufReader, prelude::*},   //获取读写TcpStream流的特定trait
     net::{TcpListener, TcpStream}, //用于监听tcp连接
+    thread,
+    time::Duration,
 };
 
 fn main() {
@@ -39,17 +41,20 @@ fn handle_connection(mut stream: TcpStream) {
 }
  */
 
-fn handle_connection(mut stream:TcpStream) {
+fn handle_connection(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&mut stream);
     //使用next从迭代器里获取第一项
     //第一个unwrap负责处理Option，并在迭代器没有项时停止程序
     //第二个unwrap负责处理Result
     let request_line = buf_reader.lines().next().unwrap().unwrap();
 
-    let (status_line, filename) = if request_line == "GET / HTTP/1.1" {
-        ("HTTP/1.1 200 OK", "hello.html")
-    } else {
-        ("HTTP/1.1 404 NOT FOUND", "404.html")
+    let (status_line, filename) = match &request_line[..] {
+        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "hello.html"),
+        "GET /sleep HTTP/1.1" => {//访问 127.0.0.1:7878/sleep 即可触发
+            thread::sleep(Duration::from_secs(5));
+            ("HTTP/1.1 200 OK", "hello.html")
+        }
+        _ => ("HTTP/1.1 404 NOT FOUND", "404.html"),
     };
 
     let contents = fs::read_to_string(filename).unwrap();
