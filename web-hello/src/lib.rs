@@ -1,9 +1,7 @@
 use std::thread;
 
 pub struct ThreadPool {
-    // thread::JoinHandle<T> 中的T,是闭包返回的类型
-    // 这里暂时不需要任何返回值,所以使用()
-    threads: Vec<thread::JoinHandle<()>>,
+    workers: Vec<Worker>,
 }
 
 impl ThreadPool {
@@ -18,12 +16,30 @@ impl ThreadPool {
         assert!(size > 0);
         //with_capacity与new做了同样的工作，不过他为vector预先分配空间
         //而new随着后面push元素需要重新改变大小,效率上不如with_capacity
-        let mut threads = Vec::with_capacity(size);
-        for _ in 0..size {
-            // create some threads and store them into the vector
+        let mut workers = Vec::with_capacity(size);
+        for i in 0..size {
+            workers.push(Worker::new(i));
         }
-        ThreadPool { threads }
+        ThreadPool { workers }
     }
 
-    pub fn execute<F>(&self, f: F) where F: FnOnce() + Send + 'static {}
+    pub fn execute<F>(&self, f: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+    }
+}
+
+struct Worker {
+    id: usize,
+    thread: thread::JoinHandle<()>,
+}
+
+impl Worker {
+    fn new(id: usize) -> Worker {
+        Worker {
+            id,
+            thread: thread::spawn(|| {}),
+        }
+    }
 }
