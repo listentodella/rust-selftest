@@ -14,7 +14,7 @@ fn main() {
         handle_connection(stream);
     }
 }
-
+/*
 fn handle_connection(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&mut stream);
     //这里增加了Vec<_>类型注解,表明希望将这些行收集到一个vector中
@@ -36,4 +36,28 @@ fn handle_connection(mut stream: TcpStream) {
 
     let response = format!("{status_line}\r\nContents-Length: {length}\r\n\r\n{contents}");
     stream.write_all(response.as_bytes()).unwrap();
+}
+ */
+
+fn handle_connection(mut stream:TcpStream) {
+    let buf_reader = BufReader::new(&mut stream);
+    //使用next从迭代器里获取第一项
+    //第一个unwrap负责处理Option，并在迭代器没有项时停止程序
+    //第二个unwrap负责处理Result
+    let request_line = buf_reader.lines().next().unwrap().unwrap();
+    if request_line == "GET / HTTP/1.1" {
+        let status_line = "HTTP/1.1 200 OK";
+        let contents = fs::read_to_string("hello.html").unwrap();
+        let length = contents.len();
+        let response = format!("{status_line}\r\nContents-Length: {length}\r\n\r\n{contents}");
+
+        stream.write_all(response.as_bytes()).unwrap();
+    } else {
+        let status_line = "HTTP/1.1 404 NOT FOUND";
+        let contents = fs::read_to_string("404.html").unwrap();
+        let length = contents.len();
+        let response = format!("{status_line}\r\nContents-Length: {length}\r\n\r\n{contents}");
+
+        stream.write_all(response.as_bytes()).unwrap();
+    }
 }
